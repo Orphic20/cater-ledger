@@ -7,7 +7,7 @@ import { currentManilaYear, peso } from "@/lib/soa";
 import { useClients, useSoas } from "@/lib/tracker";
 
 function displayName(value: string | null | undefined) {
-  return value?.trim() || "Unnamed client";
+  return value?.trim() || "Unnamed agency";
 }
 
 function shareOf(part: number, whole: number) {
@@ -85,14 +85,15 @@ export default function InsightsPage() {
   return <AppShell><div className="page-wrap insights-page">
     <div className="page-heading dashboard-heading">
       <div>
-        <div className="eyebrow">CLIENT INSIGHTS</div>
+        <div className="eyebrow">AGENCY INSIGHTS</div>
         <h1>Who contributes the most.</h1>
-        <p>See which clients drive billing, who still owes, and each account’s share of the year.</p>
+        <p>See which agencies drive billing, who still owes, and each account’s share of the year.</p>
       </div>
       <label className="year-picker">
         <span>YEAR</span>
+        <strong>{year}</strong>
         <select aria-label="Insights year" value={year} onChange={event => setYear(Number(event.target.value))}>
-          {years.map(option => <option key={option}>{option}</option>)}
+          {years.map(option => <option key={option} value={option}>{option}</option>)}
         </select>
         <ChevronDown size={15} />
       </label>
@@ -101,12 +102,12 @@ export default function InsightsPage() {
     {!yearly.length ? (
       <div className="empty-state table-panel">
         <h3>No dated SOAs for {year}</h3>
-        <p>Add statements with an SOA date to compare client contributions.</p>
+        <p>Add statements with an SOA date to compare agency contributions.</p>
         <Link href="/soa/new" className="text-link">Add an SOA →</Link>
       </div>
     ) : (
       <>
-        <section className="contributor-highlights" aria-label={`Top client highlights for ${year}`}>
+        <section className="contributor-highlights" aria-label={`Top agency highlights for ${year}`}>
           <article className="highlight-card lead-card">
             <div className="eyebrow">BIGGEST CONTRIBUTOR</div>
             {topContributor?.id === "unassigned" ? <h2>{topContributor.name}</h2> : <h2><Link href={`/clients/${topContributor!.id}?year=${year}`}>{topContributor!.name}</Link></h2>}
@@ -139,7 +140,7 @@ export default function InsightsPage() {
 
         <section className="chart-panel insights-panel">
           <div className="chart-heading">
-            <div><div className="eyebrow">SHARE OF BILLING</div><h2>Client contribution</h2></div>
+            <div><div className="eyebrow">SHARE OF BILLING</div><h2>Agency contribution</h2></div>
             <span className="chart-period">{year} · {peso(totalBilled)} total</span>
           </div>
           <div className="share-strip" aria-hidden={byBilled.length === 0}>
@@ -171,7 +172,7 @@ export default function InsightsPage() {
             ))}
           </div>
           <p className="insights-note">
-            Top 5 clients make up {Math.min(100, Math.round(topShareTotal * 10) / 10)}% of billed amount in {year}.
+            Top 5 agencies make up {Math.min(100, Math.round(topShareTotal * 10) / 10)}% of billed amount in {year}.
             Unassigned dated SOAs are included when present.
           </p>
         </section>

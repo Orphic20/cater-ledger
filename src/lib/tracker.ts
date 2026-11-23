@@ -131,7 +131,7 @@ async function ensureClientId(draft: SoaDraft): Promise<string | null> {
     .select("id")
     .single();
   throwIfError(error);
-  if (!data) throw new Error("Couldn’t create the client.");
+  if (!data) throw new Error("Couldn’t create the agency.");
   return data.id;
 }
 

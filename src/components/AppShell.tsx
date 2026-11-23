@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="nav-label">MAIN MENU</div>
       <nav className="side-nav" aria-label="Main navigation">{items.map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} className={activeFor(item.href) ? "nav-link active" : "nav-link"}><Icon size={18} /><span>{item.label}</span></Link>; })}</nav>
       <div className="sidebar-note"><span className="note-dot" />A clear view of what’s billed and due.</div>
-      <div className="sidebar-footer">Catering client &amp; billing tracker<button type="button" className="sign-out" onClick={() => { void signOut(); }}>Sign out</button></div>
+      <div className="sidebar-footer">Agency &amp; billing tracker<button type="button" className="sign-out" onClick={() => { void signOut(); }}>Sign out</button></div>
     </aside>
     <div className="main-column">
       <header className="mobile-header"><Link href="/" className="brand-lockup"><span className="brand-mark"><UtensilsCrossed size={17} /></span><span><strong>LA FOODHOUSE</strong><small>CLIENT LEDGER</small></span></Link><button type="button" className="sign-out" onClick={() => { void signOut(); }}>Sign out</button></header>

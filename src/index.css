@@ -70,3 +70,7 @@
   .rank-bar-wrap{grid-column:2;grid-row:2}
   .rank-amount,.rank-metrics{grid-column:2;grid-row:3;justify-items:start;text-align:left}
 }
+
+.year-picker,.filter-select{position:relative;cursor:pointer}
+.year-picker strong,.filter-select strong{font-size:13px;font-weight:700;color:#324c3c;pointer-events:none}
+.year-picker select,.filter-select select{position:absolute;inset:0;z-index:1;width:100%;height:100%;max-width:none;min-width:0;margin:0;opacity:0;cursor:pointer}

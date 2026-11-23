@@ -36,7 +36,6 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
   const [date, setDate] = useState(() => toText(existing?.date ?? null));
   const [reference, setReference] = useState(() => toText(existing?.refNumber ?? null));
   const [referenceTouched, setReferenceTouched] = useState(Boolean(existing));
-  const [agency, setAgency] = useState(() => toText(existing?.agency ?? null));
   const [dueDate, setDueDate] = useState(() => toText(existing?.dueDate ?? null));
   const [amount, setAmount] = useState(() => existing?.amount == null ? "" : Number(existing.amount).toFixed(2));
   const [eventName, setEventName] = useState(() => toText(existing?.eventName ?? null));
@@ -49,7 +48,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
   const returnToList = () => setPath(`/soa?year=${encodeURIComponent(yearParam)}`);
   const refTrim = reference.trim();
   const duplicateRef = Boolean(refTrim && referenceTouched && soas.some(item => item.refNumber?.toLowerCase() === refTrim.toLowerCase() && item.id !== existing?.id));
-  const clientName = clients.find(client => client.id === existing?.clientId)?.name?.trim() || (existing?.clientId ? "Unnamed client" : "Unassigned");
+  const clientName = clients.find(client => client.id === existing?.clientId)?.name?.trim() || (existing?.clientId ? "Unnamed agency" : "Unassigned");
   const displayRef = existing?.refNumber || "No reference";
   const dateYear = date ? Number(date.slice(0, 4)) : currentManilaYear();
   const suggestion = useMemo(
@@ -98,6 +97,9 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
     let newClient: { name: string; contactNumber: string } | undefined;
     let chosenClient: string | null = clientChoice === "unassigned" || clientChoice === "new" ? null : clientChoice;
     if (clientChoice === "new") newClient = { name: newClientName, contactNumber: newClientContact };
+    const selectedAgencyName = clientChoice === "new"
+      ? (newClientName.trim() || null)
+      : clients.find(client => client.id === chosenClient)?.name?.trim() || null;
 
     const refMode = !referenceTouched ? "automatic" : refTrim ? "manual" : "blank";
 
@@ -108,7 +110,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
         newClient,
         refMode,
         refNumber: existing || refMode === "manual" ? (refTrim || null) : null,
-        agency: agency.trim() || null,
+        agency: selectedAgencyName,
         date: date || null,
         dueDate: dueDate || null,
         amount: amountValue,
@@ -159,13 +161,13 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
     <button type="button" className="back-link back-button" onClick={returnToList}><ArrowLeft size={16} />Back to SOA Tracker</button>
     <div className="page-heading editor-heading"><div><div className="eyebrow">{existing ? "SOA RECORD" : "NEW STATEMENT"}</div><h1>{existing ? displayRef : "Add a Statement of Account"}</h1><p>{existing ? `${clientName} · ${dateLabel(existing.date)}` : "Enter the details you have. You can fill in or change fields later."}</p></div>{existing && <StatusBadge status={existing.status} />}</div>
     <form className="editor-card" onSubmit={onSave}>
-      <section className="form-section"><div className="form-section-title"><span className="form-step">1</span><div><h2>Account details</h2><p>Reference, client, and billing information.</p></div></div>
+      <section className="form-section"><div className="form-section-title"><span className="form-step">1</span><div><h2>Account details</h2><p>Reference, agency, and billing information.</p></div></div>
         <div className="form-grid"><label className="form-field"><span>Ref # <i>Optional</i></span><input value={reference} onChange={event => updateReference(event.target.value)} placeholder={`e.g. 008-${dateYear}`} aria-invalid={duplicateRef} /><small className={duplicateRef ? "field-error" : "field-help"}>{duplicateRef ? "This Ref # is already in use" : `Suggested for ${dateYear}; you can edit or clear it.`}</small></label>
-          <label className="form-field"><span>Client <i>Optional</i></span><div className="select-wrap"><select value={clientChoice} onChange={event => setClientChoice(event.target.value)}><option value="unassigned">Unassigned</option>{clients.map(client => <option key={client.id} value={client.id}>{client.name?.trim() || "Unnamed client"}</option>)}<option value="new">+ Create a client</option></select><ChevronDown size={15} /></div></label>
+          <label className="form-field"><span>Agency <i>Optional</i></span><div className="select-wrap"><select value={clientChoice} onChange={event => setClientChoice(event.target.value)}><option value="unassigned">Unassigned</option>{clients.map(client => <option key={client.id} value={client.id}>{client.name?.trim() || "Unnamed agency"}</option>)}<option value="new">+ Create an agency</option></select><ChevronDown size={15} /></div></label>
         </div>
-        {clientChoice === "new" && <div className="form-grid inline-client-fields"><label className="form-field"><span>Client name <i>Optional</i></span><input value={newClientName} onChange={event => setNewClientName(event.target.value)} placeholder="Client name" /></label><label className="form-field"><span>Contact number <i>Optional</i></span><input value={newClientContact} onChange={event => setNewClientContact(event.target.value)} placeholder="Keep the +63 prefix or leading zero" /></label></div>}
-        <div className="form-grid"><label className="form-field"><span>Agency <i>Optional</i></span><input value={agency} onChange={event => setAgency(event.target.value)} placeholder="Agency or event organizer" /></label><label className="form-field"><span>Amount (₱) <i>Optional</i></span><input type="number" min="0" step="0.01" value={amount} onChange={event => updateAmount(event.target.value)} placeholder="0.00" aria-invalid={Boolean(amountError)} />{amountError && <small className="field-error">{amountError}</small>}</label></div>
-        <div className="form-grid"><label className="form-field"><span>SOA date <i>Optional</i></span><input type="date" value={date} onChange={event => updateDate(event.target.value)} /><small className="field-help">Used for yearly billing and deal counts.</small></label><label className="form-field"><span>Due date <i>Optional</i></span><input type="date" value={dueDate} onChange={event => setDueDate(event.target.value)} /><small className="field-help">A blank due date stays Unpaid.</small></label></div>
+        {clientChoice === "new" && <div className="form-grid inline-client-fields"><label className="form-field"><span>Agency name <i>Optional</i></span><input value={newClientName} onChange={event => setNewClientName(event.target.value)} placeholder="Agency name" /></label><label className="form-field"><span>Contact number <i>Optional</i></span><input value={newClientContact} onChange={event => setNewClientContact(event.target.value)} placeholder="Keep the +63 prefix or leading zero" /></label></div>}
+        <div className="form-grid"><label className="form-field"><span>Amount (₱) <i>Optional</i></span><input type="number" min="0" step="0.01" value={amount} onChange={event => updateAmount(event.target.value)} placeholder="0.00" aria-invalid={Boolean(amountError)} />{amountError && <small className="field-error">{amountError}</small>}</label><label className="form-field"><span>SOA date <i>Optional</i></span><input type="date" value={date} onChange={event => updateDate(event.target.value)} /><small className="field-help">Used for yearly billing and deal counts.</small></label></div>
+        <div className="form-grid"><label className="form-field"><span>Due date <i>Optional</i></span><input type="date" value={dueDate} onChange={event => setDueDate(event.target.value)} /><small className="field-help">A blank due date stays Unpaid.</small></label></div>
       </section>
       <section className="form-section catering-section"><div className="form-section-title"><span className="form-step event-step"><CalendarDays size={17} /></span><div><h2>Catering event</h2><p>Optional event details appear on the calendar.</p></div></div><div className="form-grid"><label className="form-field"><span>Event name <i>Optional</i></span><input value={eventName} onChange={event => setEventName(event.target.value)} placeholder="Catering event" /></label><label className="form-field"><span>Event date <i>Optional</i></span><input type="date" value={eventDate} onChange={event => setEventDate(event.target.value)} /></label></div><label className="form-field"><span>Venue <i>Optional</i></span><input value={venue} onChange={event => setVenue(event.target.value)} placeholder="Venue or location" /></label></section>
       {existing && <section className="payment-record"><div className="payment-record-copy"><div className="eyebrow">PAYMENT STATUS</div><div className="payment-record-title">{existing.status === "Paid" ? "Payment has been recorded." : "This SOA is still outstanding."}</div><p>{existing.status === "Paid" ? "Undo the paid status if it was entered by mistake." : "Mark as Paid when the full amount has been received."}</p></div>{existing.status === "Paid" ? <Button type="button" variant="outline" onClick={() => { void undoPaid(); }}>Undo paid status</Button> : <Button type="button" className="paid-action" onClick={() => setShowPaymentConfirm(true)}><Check size={16} />Mark as Paid</Button>}</section>}
