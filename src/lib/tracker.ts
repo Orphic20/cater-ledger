@@ -228,3 +228,30 @@ export function useSetPaid() {
     },
   });
 }
+
+export function useDeleteSoa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("soas").delete().eq("id", id);
+      throwIfError(error);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["soas"] });
+    },
+  });
+}
+
+export function useDeleteClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      throwIfError(error);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await queryClient.invalidateQueries({ queryKey: ["soas"] });
+    },
+  });
+}

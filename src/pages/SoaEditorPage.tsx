@@ -1,13 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, CalendarDays, Check, ChevronDown, CircleAlert, Save } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, ChevronDown, CircleAlert, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
 import { LedgerState } from "@/components/LedgerState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { currentManilaYear, peso, suggestNextReference } from "@/lib/soa";
-import { errorMessage, isDuplicateReference, useClients, useSaveSoa, useSetPaid, useSoas, type Client, type ViewSoa } from "@/lib/tracker";
+import { errorMessage, isDuplicateReference, useClients, useDeleteSoa, useSaveSoa, useSetPaid, useSoas, type Client, type ViewSoa } from "@/lib/tracker";
 
 const dateLabel = (value: string | null) => value ? new Date(`${value}T12:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const toText = (value: string | null) => value ?? "";
@@ -27,6 +27,7 @@ export default function SoaEditorPage({ recordId }: { recordId: string | null })
 
 function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Client[]; soas: ViewSoa[] }) {
   const saveSoa = useSaveSoa();
+  const deleteSoa = useDeleteSoa();
   const setPaid = useSetPaid();
   const [, setPath] = useLocation();
   const [clientChoice, setClientChoice] = useState(() => existing?.clientId ?? "unassigned");
@@ -42,6 +43,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
   const [eventDate, setEventDate] = useState(() => toText(existing?.eventDate ?? null));
   const [venue, setVenue] = useState(() => toText(existing?.venue ?? null));
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [amountError, setAmountError] = useState("");
   const yearParam = new URLSearchParams(window.location.search).get("year") || String(currentManilaYear());
   const returnToList = () => setPath(`/soa?year=${encodeURIComponent(yearParam)}`);
@@ -142,6 +144,17 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
     }
   }
 
+  async function confirmDelete() {
+    if (!existing) return;
+    try {
+      await deleteSoa.mutateAsync(existing.id);
+      toast.success("SOA deleted");
+      returnToList();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
+  }
+
   return <AppShell><div className="page-wrap editor-page">
     <button type="button" className="back-link back-button" onClick={returnToList}><ArrowLeft size={16} />Back to SOA Tracker</button>
     <div className="page-heading editor-heading"><div><div className="eyebrow">{existing ? "SOA RECORD" : "NEW STATEMENT"}</div><h1>{existing ? displayRef : "Add a Statement of Account"}</h1><p>{existing ? `${clientName} · ${dateLabel(existing.date)}` : "Enter the details you have. You can fill in or change fields later."}</p></div>{existing && <StatusBadge status={existing.status} />}</div>
@@ -157,7 +170,15 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
       <section className="form-section catering-section"><div className="form-section-title"><span className="form-step event-step"><CalendarDays size={17} /></span><div><h2>Catering event</h2><p>Optional event details appear on the calendar.</p></div></div><div className="form-grid"><label className="form-field"><span>Event name <i>Optional</i></span><input value={eventName} onChange={event => setEventName(event.target.value)} placeholder="Catering event" /></label><label className="form-field"><span>Event date <i>Optional</i></span><input type="date" value={eventDate} onChange={event => setEventDate(event.target.value)} /></label></div><label className="form-field"><span>Venue <i>Optional</i></span><input value={venue} onChange={event => setVenue(event.target.value)} placeholder="Venue or location" /></label></section>
       {existing && <section className="payment-record"><div className="payment-record-copy"><div className="eyebrow">PAYMENT STATUS</div><div className="payment-record-title">{existing.status === "Paid" ? "Payment has been recorded." : "This SOA is still outstanding."}</div><p>{existing.status === "Paid" ? "Undo the paid status if it was entered by mistake." : "Mark as Paid when the full amount has been received."}</p></div>{existing.status === "Paid" ? <Button type="button" variant="outline" onClick={() => { void undoPaid(); }}>Undo paid status</Button> : <Button type="button" className="paid-action" onClick={() => setShowPaymentConfirm(true)}><Check size={16} />Mark as Paid</Button>}</section>}
       {showPaymentConfirm && existing && <div className="confirm-payment"><CircleAlert size={20} /><div className="confirm-copy"><strong>Confirm full payment?</strong><p>{clientName}{existing.refNumber ? ` · ${existing.refNumber}` : ""} · {existing.amount == null ? "No amount entered" : peso(existing.amount)}</p></div><Button type="button" variant="outline" onClick={() => setShowPaymentConfirm(false)}>Cancel</Button><Button type="button" onClick={() => { void confirmPaid(); }}>Confirm payment</Button></div>}
-      <div className="form-footer"><div className="form-footer-note">{existing ? "Changes are saved to your Supabase ledger." : "All fields are optional; save what you have."}</div><div className="footer-actions"><Button type="button" variant="outline" onClick={returnToList}>Cancel</Button><Button type="submit" className="save-button" disabled={duplicateRef || Boolean(amountError) || saveSoa.isPending}><Save size={16} />Save SOA</Button></div></div>
+      {showDeleteConfirm && existing && <div className="confirm-payment confirm-delete"><CircleAlert size={20} /><div className="confirm-copy"><strong>Delete this SOA?</strong><p>This permanently removes {existing.refNumber || "this statement"}{existing.amount == null ? "" : ` · ${peso(existing.amount)}`}.</p></div><Button type="button" variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button><Button type="button" className="delete-action" disabled={deleteSoa.isPending} onClick={() => { void confirmDelete(); }}>Delete SOA</Button></div>}
+      <div className="form-footer">
+        <div className="form-footer-note">{existing ? "Changes are saved to your Supabase ledger." : "All fields are optional; save what you have."}</div>
+        <div className="footer-actions">
+          {existing && <Button type="button" variant="outline" className="delete-outline" disabled={deleteSoa.isPending} onClick={() => setShowDeleteConfirm(true)}><Trash2 size={15} />Delete</Button>}
+          <Button type="button" variant="outline" onClick={returnToList}>Cancel</Button>
+          <Button type="submit" className="save-button" disabled={duplicateRef || Boolean(amountError) || saveSoa.isPending}><Save size={16} />Save SOA</Button>
+        </div>
+      </div>
     </form>
   </div></AppShell>;
 }
