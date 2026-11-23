@@ -37,7 +37,7 @@ function SetupScreen() {
   return <Centered>
     <div className="eyebrow">SUPABASE</div>
     <h1>Connect your ledger</h1>
-    <p>Copy <code>.env.example</code> to <code>.env</code> and add your project URL and publishable key. Then run <code>supabase/migrations/0001_ledger.sql</code> in the Supabase SQL editor and restart the dev server.</p>
+    <p>Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> in Vercel → Project → Settings → Environment Variables, then redeploy. Locally, put the same values in <code>.env</code> and restart the dev server.</p>
   </Centered>;
 }
 
