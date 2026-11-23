@@ -104,7 +104,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
     const refMode = !referenceTouched ? "automatic" : refTrim ? "manual" : "blank";
 
     try {
-      const id = await saveSoa.mutateAsync({
+      await saveSoa.mutateAsync({
         id: existing?.id,
         clientId: chosenClient,
         newClient,
@@ -119,7 +119,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
         venue: venue.trim() || null,
       });
       toast.success(existing ? "SOA updated" : "SOA added");
-      setPath(`/soa/${id}?year=${encodeURIComponent(dateYear)}`);
+      returnToList();
     } catch (error) {
       toast.error(isDuplicateReference(error) ? "This Ref # is already in use" : errorMessage(error));
     }
