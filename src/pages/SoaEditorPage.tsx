@@ -32,6 +32,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
   const [, setPath] = useLocation();
   const [clientChoice, setClientChoice] = useState(() => existing?.clientId ?? "unassigned");
   const [newClientName, setNewClientName] = useState("");
+  const [newClientContactName, setNewClientContactName] = useState("");
   const [newClientContact, setNewClientContact] = useState("");
   const [date, setDate] = useState(() => toText(existing?.date ?? null));
   const [reference, setReference] = useState(() => toText(existing?.refNumber ?? null));
@@ -40,6 +41,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
   const [amount, setAmount] = useState(() => existing?.amount == null ? "" : Number(existing.amount).toFixed(2));
   const [eventName, setEventName] = useState(() => toText(existing?.eventName ?? null));
   const [eventDate, setEventDate] = useState(() => toText(existing?.eventDate ?? null));
+  const [eventEndDate, setEventEndDate] = useState(() => toText(existing?.eventEndDate ?? null));
   const [venue, setVenue] = useState(() => toText(existing?.venue ?? null));
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -94,14 +96,24 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
       amountValue = Math.round((value + Number.EPSILON) * 100) / 100;
     }
 
-    let newClient: { name: string; contactNumber: string } | undefined;
+    let newClient: { name: string; contactName: string; contactNumber: string } | undefined;
     let chosenClient: string | null = clientChoice === "unassigned" || clientChoice === "new" ? null : clientChoice;
-    if (clientChoice === "new") newClient = { name: newClientName, contactNumber: newClientContact };
+    if (clientChoice === "new") {
+      newClient = {
+        name: newClientName,
+        contactName: newClientContactName,
+        contactNumber: newClientContact,
+      };
+    }
     const selectedAgencyName = clientChoice === "new"
       ? (newClientName.trim() || null)
       : clients.find(client => client.id === chosenClient)?.name?.trim() || null;
 
     const refMode = !referenceTouched ? "automatic" : refTrim ? "manual" : "blank";
+    if (eventEndDate && eventDate && eventEndDate < eventDate) {
+      toast.error("Event end date can’t be before the start date.");
+      return;
+    }
 
     try {
       await saveSoa.mutateAsync({
@@ -116,6 +128,7 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
         amount: amountValue,
         eventName: eventName.trim() || null,
         eventDate: eventDate || null,
+        eventEndDate: eventEndDate || null,
         venue: venue.trim() || null,
       });
       toast.success(existing ? "SOA updated" : "SOA added");
@@ -165,11 +178,25 @@ function SoaForm({ existing, clients, soas }: { existing?: ViewSoa; clients: Cli
         <div className="form-grid"><label className="form-field"><span>Ref # <i>Optional</i></span><input value={reference} onChange={event => updateReference(event.target.value)} placeholder={`e.g. 008-${dateYear}`} aria-invalid={duplicateRef} /><small className={duplicateRef ? "field-error" : "field-help"}>{duplicateRef ? "This Ref # is already in use" : `Suggested for ${dateYear}; you can edit or clear it.`}</small></label>
           <label className="form-field"><span>Agency <i>Optional</i></span><div className="select-wrap"><select value={clientChoice} onChange={event => setClientChoice(event.target.value)}><option value="unassigned">Unassigned</option>{clients.map(client => <option key={client.id} value={client.id}>{client.name?.trim() || "Unnamed agency"}</option>)}<option value="new">+ Create an agency</option></select><ChevronDown size={15} /></div></label>
         </div>
-        {clientChoice === "new" && <div className="form-grid inline-client-fields"><label className="form-field"><span>Agency name <i>Optional</i></span><input value={newClientName} onChange={event => setNewClientName(event.target.value)} placeholder="Agency name" /></label><label className="form-field"><span>Contact number <i>Optional</i></span><input value={newClientContact} onChange={event => setNewClientContact(event.target.value)} placeholder="Keep the +63 prefix or leading zero" /></label></div>}
-        <div className="form-grid"><label className="form-field"><span>Amount (₱) <i>Optional</i></span><input type="number" min="0" step="0.01" value={amount} onChange={event => updateAmount(event.target.value)} placeholder="0.00" aria-invalid={Boolean(amountError)} />{amountError && <small className="field-error">{amountError}</small>}</label><label className="form-field"><span>SOA date <i>Optional</i></span><input type="date" value={date} onChange={event => updateDate(event.target.value)} /><small className="field-help">Used for yearly billing and deal counts.</small></label></div>
+        {clientChoice === "new" && (
+          <div className="form-grid inline-client-fields">
+            <label className="form-field"><span>Agency name <i>Optional</i></span><input value={newClientName} onChange={event => setNewClientName(event.target.value)} placeholder="Agency name" /></label>
+            <label className="form-field"><span>Contact name <i>Optional</i></span><input value={newClientContactName} onChange={event => setNewClientContactName(event.target.value)} placeholder="Contact person" /></label>
+            <label className="form-field"><span>Contact number <i>Optional</i></span><input value={newClientContact} onChange={event => setNewClientContact(event.target.value)} placeholder="Keep the +63 prefix or leading zero" /></label>
+          </div>
+        )}
+        <div className="form-grid"><label className="form-field"><span>Amount (₱) <i>Optional</i></span><input type="number" min="0" step="0.01" value={amount} onChange={event => updateAmount(event.target.value)} placeholder="0.00" aria-invalid={Boolean(amountError)} />{amountError && <small className="field-error">{amountError}</small>}</label><label className="form-field"><span>SOA date <i>Optional</i></span><input type="date" value={date} onChange={event => updateDate(event.target.value)} /><small className="field-help">Used for yearly billing and transaction counts.</small></label></div>
         <div className="form-grid"><label className="form-field"><span>Due date <i>Optional</i></span><input type="date" value={dueDate} onChange={event => setDueDate(event.target.value)} /><small className="field-help">A blank due date stays Unpaid.</small></label></div>
       </section>
-      <section className="form-section catering-section"><div className="form-section-title"><span className="form-step event-step"><CalendarDays size={17} /></span><div><h2>Catering event</h2><p>Optional event details appear on the calendar.</p></div></div><div className="form-grid"><label className="form-field"><span>Event name <i>Optional</i></span><input value={eventName} onChange={event => setEventName(event.target.value)} placeholder="Catering event" /></label><label className="form-field"><span>Event date <i>Optional</i></span><input type="date" value={eventDate} onChange={event => setEventDate(event.target.value)} /></label></div><label className="form-field"><span>Venue <i>Optional</i></span><input value={venue} onChange={event => setVenue(event.target.value)} placeholder="Venue or location" /></label></section>
+      <section className="form-section catering-section">
+        <div className="form-section-title"><span className="form-step event-step"><CalendarDays size={17} /></span><div><h2>Catering event</h2><p>Optional event details appear on the calendar.</p></div></div>
+        <label className="form-field"><span>Event name <i>Optional</i></span><input value={eventName} onChange={event => setEventName(event.target.value)} placeholder="Catering event" /></label>
+        <div className="form-grid">
+          <label className="form-field"><span>Event start <i>Optional</i></span><input type="date" value={eventDate} onChange={event => setEventDate(event.target.value)} /></label>
+          <label className="form-field"><span>Event end <i>Optional</i></span><input type="date" value={eventEndDate} min={eventDate || undefined} onChange={event => setEventEndDate(event.target.value)} /><small className="field-help">Leave blank for a one-day event.</small></label>
+        </div>
+        <label className="form-field"><span>Venue <i>Optional</i></span><input value={venue} onChange={event => setVenue(event.target.value)} placeholder="Venue or location" /></label>
+      </section>
       {existing && <section className="payment-record"><div className="payment-record-copy"><div className="eyebrow">PAYMENT STATUS</div><div className="payment-record-title">{existing.status === "Paid" ? "Payment has been recorded." : "This SOA is still outstanding."}</div><p>{existing.status === "Paid" ? "Undo the paid status if it was entered by mistake." : "Mark as Paid when the full amount has been received."}</p></div>{existing.status === "Paid" ? <Button type="button" variant="outline" onClick={() => { void undoPaid(); }}>Undo paid status</Button> : <Button type="button" className="paid-action" onClick={() => setShowPaymentConfirm(true)}><Check size={16} />Mark as Paid</Button>}</section>}
       {showPaymentConfirm && existing && <div className="confirm-payment"><CircleAlert size={20} /><div className="confirm-copy"><strong>Confirm full payment?</strong><p>{clientName}{existing.refNumber ? ` · ${existing.refNumber}` : ""} · {existing.amount == null ? "No amount entered" : peso(existing.amount)}</p></div><Button type="button" variant="outline" onClick={() => setShowPaymentConfirm(false)}>Cancel</Button><Button type="button" onClick={() => { void confirmPaid(); }}>Confirm payment</Button></div>}
       {showDeleteConfirm && existing && <div className="confirm-payment confirm-delete"><CircleAlert size={20} /><div className="confirm-copy"><strong>Delete this SOA?</strong><p>This permanently removes {existing.refNumber || "this statement"}{existing.amount == null ? "" : ` · ${peso(existing.amount)}`}.</p></div><Button type="button" variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button><Button type="button" className="delete-action" disabled={deleteSoa.isPending} onClick={() => { void confirmDelete(); }}>Delete SOA</Button></div>}

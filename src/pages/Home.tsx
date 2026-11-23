@@ -45,7 +45,7 @@ export default function Home() {
       billed: records.reduce((sum, row) => sum + (row.amount ?? 0), 0),
       due: records.filter(row => row.status !== "Paid").reduce((sum, row) => sum + (row.amount ?? 0), 0),
     };
-  }).filter(row => `${row.agency} ${row.client.contactNumber ?? ""}`.toLowerCase().includes(search.toLowerCase()));
+  }).filter(row => `${row.agency} ${row.client.contactName ?? ""} ${row.client.contactNumber ?? ""}`.toLowerCase().includes(search.toLowerCase()));
   const clientQuery = `?year=${year}&q=${encodeURIComponent(search)}`;
 
   return <AppShell><div className="page-wrap">
@@ -114,6 +114,11 @@ export default function Home() {
                       <Link href={`/clients/${client.id}${clientQuery}`} className="client-name-link" onClick={event => event.stopPropagation()}>
                         {agency}
                       </Link>
+                      {(client.contactName || client.contactNumber) && (
+                        <div className="agency-contact-sub">
+                          {[client.contactName?.trim(), client.contactNumber?.trim()].filter(Boolean).join(" · ")}
+                        </div>
+                      )}
                     </td>
                     <td className="numeric money">{peso(billed)}</td>
                     <td className="numeric money outstanding-cell">{peso(due)}</td>
@@ -126,6 +131,11 @@ export default function Home() {
             {clientRows.map(({ client, agency, billed, due }) => (
               <Link key={client.id} href={`/clients/${client.id}${clientQuery}`} className="client-card">
                 <div className="client-card-title"><strong>{agency}</strong></div>
+                {(client.contactName || client.contactNumber) && (
+                  <div className="client-card-contact">
+                    {[client.contactName?.trim(), client.contactNumber?.trim()].filter(Boolean).join(" · ")}
+                  </div>
+                )}
                 <div className="client-card-money">
                   <div><small>Total</small><b>{peso(billed)}</b></div>
                   <div><small>Remaining</small><b>{peso(due)}</b></div>

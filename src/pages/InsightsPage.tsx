@@ -46,7 +46,7 @@ export default function InsightsPage() {
     return {
       id: client.id,
       name: displayName(client.name),
-      deals: records.length,
+      transactions: records.length,
       billed,
       due,
       paid,
@@ -60,20 +60,20 @@ export default function InsightsPage() {
     return {
       id: "unassigned",
       name: "Unassigned",
-      deals: records.length,
+      transactions: records.length,
       billed,
       due,
       paid,
       share: shareOf(billed, totalBilled),
     };
-  })()].filter(row => row.deals > 0);
+  })()].filter(row => row.transactions > 0);
 
   const byBilled = [...clientRows].sort((a, b) => b.billed - a.billed);
   const byDue = [...clientRows].filter(row => row.due > 0).sort((a, b) => b.due - a.due);
-  const byDeals = [...clientRows].sort((a, b) => b.deals - a.deals || b.billed - a.billed);
+  const byTransactions = [...clientRows].sort((a, b) => b.transactions - a.transactions || b.billed - a.billed);
   const topContributor = byBilled[0];
   const topOwing = byDue[0];
-  const mostDeals = byDeals[0];
+  const mostTransactions = byTransactions[0];
   const largestBilled = Math.max(1, ...byBilled.map(item => item.billed));
   const largestDue = Math.max(1, ...byDue.map(item => item.due));
 
@@ -138,7 +138,7 @@ export default function InsightsPage() {
             <div className="eyebrow">BIGGEST CONTRIBUTOR</div>
             {topContributor?.id === "unassigned" ? <h2>{topContributor.name}</h2> : <h2><Link href={`/clients/${topContributor!.id}?year=${year}`}>{topContributor!.name}</Link></h2>}
             <strong>{peso(topContributor!.billed)}</strong>
-            <small>{topContributor!.share}% of total billed · {topContributor!.deals} {topContributor!.deals === 1 ? "deal" : "deals"}</small>
+            <small>{topContributor!.share}% of total billed · {topContributor!.transactions} {topContributor!.transactions === 1 ? "transaction" : "transactions"}</small>
           </article>
           <article className="highlight-card">
             <div className="eyebrow">MOST OUTSTANDING</div>
@@ -157,10 +157,10 @@ export default function InsightsPage() {
             )}
           </article>
           <article className="highlight-card">
-            <div className="eyebrow">MOST DEALS</div>
-            {mostDeals?.id === "unassigned" ? <h2>{mostDeals.name}</h2> : <h2><Link href={`/clients/${mostDeals!.id}?year=${year}`}>{mostDeals!.name}</Link></h2>}
-            <strong>{mostDeals!.deals}</strong>
-            <small>{peso(mostDeals!.billed)} billed in {year}</small>
+            <div className="eyebrow">MOST TRANSACTIONS</div>
+            {mostTransactions?.id === "unassigned" ? <h2>{mostTransactions.name}</h2> : <h2><Link href={`/clients/${mostTransactions!.id}?year=${year}`}>{mostTransactions!.name}</Link></h2>}
+            <strong>{mostTransactions!.transactions}</strong>
+            <small>{peso(mostTransactions!.billed)} billed in {year}</small>
           </article>
         </section>
 
@@ -198,7 +198,7 @@ export default function InsightsPage() {
                   <span className="rank-index">{index + 1}</span>
                   <div className="rank-copy">
                     {item.id === "unassigned" ? <strong>{item.name}</strong> : <Link href={`/clients/${item.id}?year=${year}`} className="client-name-link">{item.name}</Link>}
-                    <small>{item.deals} {item.deals === 1 ? "deal" : "deals"} · Paid {peso(item.paid)} · Outstanding {peso(item.due)}</small>
+                    <small>{item.transactions} {item.transactions === 1 ? "transaction" : "transactions"} · Paid {peso(item.paid)} · Outstanding {peso(item.due)}</small>
                   </div>
                   <div className="rank-bar-wrap">
                     <div className={`rank-bar ${tone}`} style={{ width: `${Math.max(6, (item.billed / largestBilled) * 100)}%` }} />

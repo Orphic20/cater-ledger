@@ -7,6 +7,7 @@ export type Database = {
         Row: {
           id: string;
           name: string | null;
+          contact_name: string | null;
           contact_number: string | null;
           created_at: string;
           updated_at: string;
@@ -14,6 +15,7 @@ export type Database = {
         Insert: {
           id?: string;
           name?: string | null;
+          contact_name?: string | null;
           contact_number?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -21,6 +23,7 @@ export type Database = {
         Update: {
           id?: string;
           name?: string | null;
+          contact_name?: string | null;
           contact_number?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -39,6 +42,7 @@ export type Database = {
           paid_at: string | null;
           event_name: string | null;
           event_date: string | null;
+          event_end_date: string | null;
           venue: string | null;
           created_at: string;
           updated_at: string;
@@ -54,6 +58,7 @@ export type Database = {
           paid_at?: string | null;
           event_name?: string | null;
           event_date?: string | null;
+          event_end_date?: string | null;
           venue?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -69,6 +74,7 @@ export type Database = {
           paid_at?: string | null;
           event_name?: string | null;
           event_date?: string | null;
+          event_end_date?: string | null;
           venue?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -97,6 +103,7 @@ export type Database = {
           paid_at: string | null;
           event_name: string | null;
           event_date: string | null;
+          event_end_date: string | null;
           venue: string | null;
           created_at: string;
           updated_at: string;

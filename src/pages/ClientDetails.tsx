@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, ChevronDown, CircleAlert, Phone, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, CircleAlert, Phone, Pencil, Printer, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
@@ -32,6 +32,7 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [name, setName] = useState(client.name ?? "");
+  const [contactName, setContactName] = useState(client.contactName ?? "");
   const [contact, setContact] = useState(client.contactNumber ?? "");
   const years = useMemo(
     () => ledgerYears(soas.filter(record => record.clientId === client.id).map(record => record.date)),
@@ -41,12 +42,14 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
   const records = linkedSoas.filter(record => record.date && Number(record.date.slice(0, 4)) === year).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   const billed = records.reduce((sum, record) => sum + (record.amount ?? 0), 0);
   const due = records.filter(record => record.status !== "Paid").reduce((sum, record) => sum + (record.amount ?? 0), 0);
+  const paid = records.filter(record => record.status === "Paid").reduce((sum, record) => sum + (record.amount ?? 0), 0);
   const query = `?year=${year}&q=${encodeURIComponent(search)}`;
+  const printedOn = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      await saveClient.mutateAsync({ id: client.id, name, contactNumber: contact });
+      await saveClient.mutateAsync({ id: client.id, name, contactName, contactNumber: contact });
       setEditing(false);
       toast.success("Agency updated");
     } catch (error) {
@@ -64,15 +67,26 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
     }
   };
 
-  return <AppShell><div className="page-wrap">
-    <Link href={`/${query}`} className="back-link"><ArrowLeft size={16} />Back to Dashboard</Link>
+  const startEdit = () => {
+    setName(client.name ?? "");
+    setContactName(client.contactName ?? "");
+    setContact(client.contactNumber ?? "");
+    setEditing(value => !value);
+  };
+
+  return <AppShell><div className="page-wrap agency-print-page">
+    <Link href={`/${query}`} className="back-link no-print"><ArrowLeft size={16} />Back to Dashboard</Link>
     <div className="page-heading detail-heading">
       <div>
         <div className="eyebrow">AGENCY ACCOUNT</div>
         <h1>{nameOf(client.name)}</h1>
-        <p className="contact-line"><Phone size={15} />{client.contactNumber || "—"}</p>
+        <div className="agency-contact-block">
+          <p className="contact-line"><UserRound size={15} />{client.contactName?.trim() || "—"}</p>
+          <p className="contact-line"><Phone size={15} />{client.contactNumber || "—"}</p>
+        </div>
+        <p className="print-only print-meta">Year {year} · Printed {printedOn}</p>
       </div>
-      <div className="heading-actions">
+      <div className="heading-actions no-print">
         <label className="year-picker">
           <span>YEAR</span>
           <select aria-label="Agency billing year" value={year} onChange={event => setYear(Number(event.target.value))}>
@@ -80,7 +94,10 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
           </select>
           <ChevronDown size={15} />
         </label>
-        <Button variant="outline" onClick={() => { setName(client.name ?? ""); setContact(client.contactNumber ?? ""); setEditing(value => !value); }}>
+        <Button variant="outline" onClick={() => window.print()}>
+          <Printer size={15} />Print
+        </Button>
+        <Button variant="outline" onClick={startEdit}>
           <Pencil size={15} />Edit agency
         </Button>
         <Button variant="outline" className="delete-outline" onClick={() => setShowDeleteConfirm(true)}>
@@ -89,13 +106,14 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
       </div>
     </div>
     {editing && (
-      <form className="client-edit-panel" onSubmit={save}>
+      <form className="client-edit-panel no-print" onSubmit={save}>
         <div className="client-edit-heading">
-          <div><strong>Edit agency</strong><p>Both fields can be left blank.</p></div>
+          <div><strong>Edit agency</strong><p>All fields can be left blank.</p></div>
           <button type="button" className="icon-button" onClick={() => setEditing(false)} aria-label="Close edit agency"><X size={16} /></button>
         </div>
         <div className="form-grid">
           <label className="form-field"><span>Agency</span><input value={name} onChange={event => setName(event.target.value)} placeholder="Agency name" /></label>
+          <label className="form-field"><span>Contact name</span><input value={contactName} onChange={event => setContactName(event.target.value)} placeholder="Contact person" /></label>
           <label className="form-field"><span>Contact number</span><input value={contact} onChange={event => setContact(event.target.value)} placeholder="e.g. +63 917 123 4567" /></label>
         </div>
         <div className="footer-actions">
@@ -105,7 +123,7 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
       </form>
     )}
     {showDeleteConfirm && (
-      <div className="confirm-payment confirm-delete">
+      <div className="confirm-payment confirm-delete no-print">
         <CircleAlert size={20} />
         <div className="confirm-copy">
           <strong>Delete this agency?</strong>
@@ -116,11 +134,11 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
       </div>
     )}
     <section className="client-stats">
-      <article><span>Deals</span><strong>{records.length}</strong><small>SOAs dated in {year}</small></article>
-      <article><span>Total billed</span><strong>{peso(billed)}</strong><small>Including paid SOAs</small></article>
+      <article><span>Transactions</span><strong>{records.length}</strong><small>SOAs dated in {year}</small></article>
+      <article><span>Total billed</span><strong>{peso(billed)}</strong><small>Paid {peso(paid)}</small></article>
       <article><span>Outstanding balance</span><strong>{peso(due)}</strong><small>Unpaid and overdue</small></article>
     </section>
-    <section className="table-panel">
+    <section className="table-panel agency-history-panel">
       <div className="section-heading">
         <div>
           <div className="eyebrow">ACCOUNT HISTORY</div>
@@ -130,7 +148,7 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
       </div>
       {records.length ? (
         <>
-          <div className="table-scroll desktop-only">
+          <div className="table-scroll desktop-only print-table-wrap">
             <table className="data-table client-history-table">
               <thead>
                 <tr>
@@ -152,17 +170,29 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
                     <td className="ref-cell">{row.refNumber || "—"}</td>
                     <td>{dateText(row.date)}</td>
                     <td className="numeric money">{row.amount == null ? "—" : peso(row.amount)}</td>
-                    <td><div className="status-cell"><StatusBadge status={row.status} /><StatusQuickAction record={row} /></div></td>
+                    <td>
+                      <div className="status-cell">
+                        <StatusBadge status={row.status} />
+                        <span className="no-print"><StatusQuickAction record={row} /></span>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot className="print-only">
+                <tr>
+                  <td colSpan={2}>Totals</td>
+                  <td className="numeric money">{peso(billed)}</td>
+                  <td>Outstanding {peso(due)}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-          <div className="mobile-soa-cards">
+          <div className="mobile-soa-cards no-print">
             {records.map(row => (
               <div key={row.id} className="mobile-soa-card-shell">
                 <Link href={`/soa/${row.id}?year=${year}`} className="soa-mobile-card">
-                  <div className="soa-mobile-top"><strong>{row.refNumber || "No reference"}</strong><StatusBadge status={row.status} /></div>
+                  <div className="soa-mobile-top"><strong className="soa-agency-primary">{row.refNumber || "No reference"}</strong><StatusBadge status={row.status} /></div>
                   <div className="soa-mobile-meta"><span>{dateText(row.date)}</span><b>{row.amount == null ? "—" : peso(row.amount)}</b></div>
                 </Link>
                 <div className="mobile-quick-status"><StatusQuickAction record={row} /></div>
@@ -174,7 +204,7 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
         <div className="empty-state compact-empty">
           <h3>No SOAs for {year}</h3>
           <p>This agency has no statements dated in the selected year.</p>
-          <Link href="/soa/new" className="text-link">Add an SOA →</Link>
+          <Link href="/soa/new" className="text-link no-print">Add an SOA →</Link>
         </div>
       )}
     </section>

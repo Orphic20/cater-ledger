@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { statusFor, type SoaStatus } from "@/lib/soa";
 import { supabase } from "@/lib/supabase";
 
-export type Client = { id: string; name: string | null; contactNumber: string | null };
+export type Client = {
+  id: string;
+  name: string | null;
+  contactName: string | null;
+  contactNumber: string | null;
+};
 export type ViewSoa = {
   id: string;
   clientId: string | null;
@@ -14,6 +19,7 @@ export type ViewSoa = {
   paidAt: string | null;
   eventName: string | null;
   eventDate: string | null;
+  eventEndDate: string | null;
   venue: string | null;
   status: SoaStatus;
 };
@@ -21,7 +27,7 @@ export type RefMode = "automatic" | "manual" | "blank";
 export type SoaDraft = {
   id?: string;
   clientId: string | null;
-  newClient?: { name: string; contactNumber: string };
+  newClient?: { name: string; contactName: string; contactNumber: string };
   refMode: RefMode;
   refNumber: string | null;
   agency: string | null;
@@ -30,6 +36,7 @@ export type SoaDraft = {
   amount: number | null;
   eventName: string | null;
   eventDate: string | null;
+  eventEndDate: string | null;
   venue: string | null;
 };
 
@@ -61,8 +68,18 @@ function throwIfError(error: { message: string; code?: string } | null): void {
   throw wrapped;
 }
 
-function mapClient(row: { id: string; name: string | null; contact_number: string | null }): Client {
-  return { id: row.id, name: row.name, contactNumber: row.contact_number };
+function mapClient(row: {
+  id: string;
+  name: string | null;
+  contact_name: string | null;
+  contact_number: string | null;
+}): Client {
+  return {
+    id: row.id,
+    name: row.name,
+    contactName: row.contact_name,
+    contactNumber: row.contact_number,
+  };
 }
 
 function mapSoa(row: {
@@ -76,6 +93,7 @@ function mapSoa(row: {
   paid_at: string | null;
   event_name: string | null;
   event_date: string | null;
+  event_end_date?: string | null;
   venue: string | null;
   status?: SoaStatus | null;
 }): ViewSoa {
@@ -92,6 +110,7 @@ function mapSoa(row: {
     paidAt,
     eventName: row.event_name,
     eventDate: row.event_date,
+    eventEndDate: row.event_end_date ?? null,
     venue: row.venue,
     status: row.status ?? statusFor(paidAt, dueDate),
   };
@@ -100,7 +119,7 @@ function mapSoa(row: {
 async function fetchClients(): Promise<Client[]> {
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, contact_number")
+    .select("id, name, contact_name, contact_number")
     .order("name", { ascending: true, nullsFirst: false });
   throwIfError(error);
   return (data ?? []).map(mapClient);
@@ -109,7 +128,7 @@ async function fetchClients(): Promise<Client[]> {
 async function fetchSoas(): Promise<ViewSoa[]> {
   const { data, error } = await supabase
     .from("soa_tracker")
-    .select("id, client_id, ref_no, agency, soa_date, due_date, amount, paid_at, event_name, event_date, venue, status")
+    .select("id, client_id, ref_no, agency, soa_date, due_date, amount, paid_at, event_name, event_date, event_end_date, venue, status")
     .order("soa_date", { ascending: false, nullsFirst: false });
   throwIfError(error);
   return (data ?? []).map(mapSoa);
@@ -127,7 +146,11 @@ async function ensureClientId(draft: SoaDraft): Promise<string | null> {
   if (!draft.newClient) return draft.clientId;
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name: blankToNull(draft.newClient.name), contact_number: blankToNull(draft.newClient.contactNumber) })
+    .insert({
+      name: blankToNull(draft.newClient.name),
+      contact_name: blankToNull(draft.newClient.contactName),
+      contact_number: blankToNull(draft.newClient.contactNumber),
+    })
     .select("id")
     .single();
   throwIfError(error);
@@ -137,6 +160,9 @@ async function ensureClientId(draft: SoaDraft): Promise<string | null> {
 
 async function saveSoa(draft: SoaDraft): Promise<string> {
   const clientId = await ensureClientId(draft);
+  const eventEndDate = draft.eventEndDate && draft.eventDate && draft.eventEndDate < draft.eventDate
+    ? draft.eventDate
+    : draft.eventEndDate;
 
   if (draft.id) {
     const { error } = await supabase
@@ -150,6 +176,7 @@ async function saveSoa(draft: SoaDraft): Promise<string> {
         amount: draft.amount,
         event_name: draft.eventName,
         event_date: draft.eventDate,
+        event_end_date: eventEndDate,
         venue: draft.venue,
       })
       .eq("id", draft.id);
@@ -171,6 +198,15 @@ async function saveSoa(draft: SoaDraft): Promise<string> {
   });
   throwIfError(error);
   if (!data) throw new Error("Couldn’t save the SOA.");
+
+  if (eventEndDate) {
+    const { error: endError } = await supabase
+      .from("soas")
+      .update({ event_end_date: eventEndDate })
+      .eq("id", data.id);
+    throwIfError(endError);
+  }
+
   return data.id;
 }
 
@@ -188,10 +224,24 @@ export function useSaveSoa() {
 export function useSaveClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, name, contactNumber }: { id: string; name: string; contactNumber: string }) => {
+    mutationFn: async ({
+      id,
+      name,
+      contactName,
+      contactNumber,
+    }: {
+      id: string;
+      name: string;
+      contactName: string;
+      contactNumber: string;
+    }) => {
       const { error } = await supabase
         .from("clients")
-        .update({ name: blankToNull(name), contact_number: blankToNull(contactNumber) })
+        .update({
+          name: blankToNull(name),
+          contact_name: blankToNull(contactName),
+          contact_number: blankToNull(contactNumber),
+        })
         .eq("id", id);
       throwIfError(error);
     },
