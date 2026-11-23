@@ -23,6 +23,12 @@ export function currentManilaYear(): number {
   return Number(manilaToday().slice(0, 4));
 }
 
+/** Current Manila year plus years that appear on dated SOAs. No empty past padding. */
+export function ledgerYears(dates: Array<string | null | undefined>): number[] {
+  const fromData = dates.flatMap(date => (date ? [Number(date.slice(0, 4))] : []));
+  return [...new Set([currentManilaYear(), ...fromData])].sort((a, b) => b - a);
+}
+
 /** Format a peso amount (not centavos). */
 export function peso(amount: number): string {
   return pesoFormatter.format(amount);

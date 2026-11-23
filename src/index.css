@@ -43,10 +43,10 @@
 .share-strip{display:flex;height:18px;border-radius:999px;overflow:hidden;background:#f0f0ea;margin-bottom:18px}
 .share-segment{height:100%;min-width:0}
 .share-segment.tone-0,.rank-swatch.tone-0,.rank-bar.tone-0{background:#315747}
-.share-segment.tone-1,.rank-swatch.tone-1,.rank-bar.tone-1{background:#4f7d63}
-.share-segment.tone-2,.rank-swatch.tone-2,.rank-bar.tone-2{background:#7a9e6e}
-.share-segment.tone-3,.rank-swatch.tone-3,.rank-bar.tone-3{background:#b7a46a}
-.share-segment.tone-4,.rank-swatch.tone-4,.rank-bar.tone-4{background:#c48a5a}
+.share-segment.tone-1,.rank-swatch.tone-1,.rank-bar.tone-1{background:#3f6f8c}
+.share-segment.tone-2,.rank-swatch.tone-2,.rank-bar.tone-2{background:#c4a14a}
+.share-segment.tone-3,.rank-swatch.tone-3,.rank-bar.tone-3{background:#c15d45}
+.share-segment.tone-4,.rank-swatch.tone-4,.rank-bar.tone-4{background:#6a6f9a}
 .share-segment.tone-others,.rank-swatch.tone-others,.rank-bar.tone-others{background:#c9cbc0}
 .share-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:-6px 0 16px;padding:0;list-style:none}
 .share-legend li{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:#6f7268}

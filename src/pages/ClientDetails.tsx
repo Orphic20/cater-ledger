@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { LedgerState } from "@/components/LedgerState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusQuickAction } from "@/components/StatusQuickAction";
-import { currentManilaYear, peso } from "@/lib/soa";
+import { currentManilaYear, ledgerYears, peso } from "@/lib/soa";
 import { errorMessage, useClients, useDeleteClient, useSaveClient, useSoas, type Client, type ViewSoa } from "@/lib/tracker";
 
 const nameOf = (name: string | null | undefined) => name?.trim() || "Unnamed agency";
@@ -33,7 +33,10 @@ function ClientAccount({ client, soas }: { client: Client; soas: ViewSoa[] }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [name, setName] = useState(client.name ?? "");
   const [contact, setContact] = useState(client.contactNumber ?? "");
-  const years = useMemo(() => [...new Set([currentManilaYear(), currentManilaYear() - 1, currentManilaYear() - 2, ...soas.filter(record => record.clientId === client.id && record.date).map(record => Number(record.date!.slice(0, 4)))])].sort((a, b) => b - a), [client.id, soas]);
+  const years = useMemo(
+    () => ledgerYears(soas.filter(record => record.clientId === client.id).map(record => record.date)),
+    [client.id, soas],
+  );
   const linkedSoas = soas.filter(record => record.clientId === client.id);
   const records = linkedSoas.filter(record => record.date && Number(record.date.slice(0, 4)) === year).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   const billed = records.reduce((sum, record) => sum + (record.amount ?? 0), 0);

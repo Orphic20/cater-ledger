@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { ChevronDown, CircleAlert, CircleCheck, CircleDashed } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LedgerState } from "@/components/LedgerState";
-import { currentManilaYear, peso } from "@/lib/soa";
+import { currentManilaYear, ledgerYears, peso } from "@/lib/soa";
 import { useClients, useSoas } from "@/lib/tracker";
 
 function displayName(value: string | null | undefined) {
@@ -28,10 +28,7 @@ export default function InsightsPage() {
   const [showAllAgencies, setShowAllAgencies] = useState(false);
   const clients = clientsQuery.data ?? [];
   const soas = soasQuery.data ?? [];
-  const years = useMemo(
-    () => [...new Set([currentManilaYear(), currentManilaYear() - 1, currentManilaYear() - 2, ...soas.flatMap(item => item.date ? [Number(item.date.slice(0, 4))] : [])])].sort((a, b) => b - a),
-    [soas],
-  );
+  const years = useMemo(() => ledgerYears(soas.map(item => item.date)), [soas]);
 
   if (!clientsQuery.data || !soasQuery.data) {
     return <AppShell><div className="page-wrap"><LedgerState isLoading={clientsQuery.isLoading || soasQuery.isLoading} error={clientsQuery.error ?? soasQuery.error} /></div></AppShell>;

@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusQuickAction } from "@/components/StatusQuickAction";
 import { LedgerState } from "@/components/LedgerState";
-import { currentManilaYear, peso } from "@/lib/soa";
+import { currentManilaYear, ledgerYears, peso } from "@/lib/soa";
 import { useClients, useSoas } from "@/lib/tracker";
 
 const readableDate = (value: string | null) => value ? new Date(`${value}T12:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -23,7 +23,7 @@ export default function SoaPage() {
   const clients = clientsQuery.data ?? [];
   const soas = soasQuery.data ?? [];
   const clientById = (id: string | null) => clients.find(client => client.id === id);
-  const years = useMemo(() => [...new Set([currentManilaYear(), currentManilaYear() - 1, ...soas.flatMap(record => record.date ? [Number(record.date.slice(0, 4))] : [])])].sort((a, b) => b - a), [soas]);
+  const years = useMemo(() => ledgerYears(soas.map(record => record.date)), [soas]);
   if (!clientsQuery.data || !soasQuery.data) return <AppShell><div className="page-wrap"><LedgerState isLoading={clientsQuery.isLoading || soasQuery.isLoading} error={clientsQuery.error ?? soasQuery.error} /></div></AppShell>;
   const filtered = soas.filter(record => year === "all" || year === "nodate" ? year === "all" || !record.date : record.date?.startsWith(`${year}-`))
     .filter(record => clientId === "all" || clientId === "unassigned" ? clientId === "all" || !record.clientId : record.clientId === clientId)
