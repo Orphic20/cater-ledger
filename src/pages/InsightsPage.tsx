@@ -15,10 +15,17 @@ function shareOf(part: number, whole: number) {
   return Math.round((part / whole) * 1000) / 10;
 }
 
+const TOP_COUNT = 5;
+
+function contributionTone(index: number) {
+  return index < TOP_COUNT ? `tone-${index}` : "tone-others";
+}
+
 export default function InsightsPage() {
   const clientsQuery = useClients();
   const soasQuery = useSoas();
   const [year, setYear] = useState(currentManilaYear());
+  const [showAllAgencies, setShowAllAgencies] = useState(false);
   const clients = clientsQuery.data ?? [];
   const soas = soasQuery.data ?? [];
   const years = useMemo(
@@ -80,7 +87,29 @@ export default function InsightsPage() {
   }));
   const largestStatus = Math.max(1, ...statusTotals.map(item => item.amount));
 
-  const topShareTotal = byBilled.slice(0, 5).reduce((sum, row) => sum + row.share, 0);
+  const topAgencies = byBilled.slice(0, TOP_COUNT);
+  const otherAgencies = byBilled.slice(TOP_COUNT);
+  const othersBilled = otherAgencies.reduce((sum, row) => sum + row.billed, 0);
+  const othersShare = shareOf(othersBilled, totalBilled);
+  const topShareTotal = topAgencies.reduce((sum, row) => sum + row.share, 0);
+  const shareSegments = [
+    ...topAgencies.map((item, index) => ({
+      id: item.id,
+      name: item.name,
+      share: item.share,
+      billed: item.billed,
+      tone: contributionTone(index),
+    })),
+    ...(otherAgencies.length ? [{
+      id: "others",
+      name: `Others (${otherAgencies.length})`,
+      share: othersShare,
+      billed: othersBilled,
+      tone: "tone-others",
+    }] : []),
+  ];
+  const listedAgencies = showAllAgencies ? byBilled : topAgencies;
+  const hasMoreAgencies = byBilled.length > TOP_COUNT;
 
   return <AppShell><div className="page-wrap insights-page">
     <div className="page-heading dashboard-heading">
@@ -143,38 +172,60 @@ export default function InsightsPage() {
             <div><div className="eyebrow">SHARE OF BILLING</div><h2>Agency contribution</h2></div>
             <span className="chart-period">{year} · {peso(totalBilled)} total</span>
           </div>
-          <div className="share-strip" aria-hidden={byBilled.length === 0}>
-            {byBilled.map((item, index) => (
+          <div className="share-strip" aria-hidden={shareSegments.length === 0}>
+            {shareSegments.map(item => (
               <div
                 key={item.id}
-                className={`share-segment tone-${index % 6}`}
+                className={`share-segment ${item.tone}`}
                 style={{ width: `${Math.max(item.share, item.billed > 0 ? 1.5 : 0)}%` }}
                 title={`${item.name}: ${item.share}%`}
               />
             ))}
           </div>
+          {shareSegments.length > 0 && (
+            <ul className="share-legend" aria-label="Contribution colors">
+              {shareSegments.map(item => (
+                <li key={`legend-${item.id}`}>
+                  <span className={`rank-swatch ${item.tone}`} aria-hidden="true" />
+                  {item.name}
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="client-rank contribution-rank">
-            {byBilled.map((item, index) => (
-              <div className="client-rank-row contribution-row" key={item.id}>
-                <span className="rank-index">{index + 1}</span>
-                <div className="rank-copy">
-                  {item.id === "unassigned" ? <strong>{item.name}</strong> : <Link href={`/clients/${item.id}?year=${year}`} className="client-name-link">{item.name}</Link>}
-                  <small>{item.deals} {item.deals === 1 ? "deal" : "deals"} · Paid {peso(item.paid)} · Outstanding {peso(item.due)}</small>
+            {listedAgencies.map((item, index) => {
+              const tone = contributionTone(index);
+              return (
+                <div className="client-rank-row contribution-row" key={item.id}>
+                  <span className={`rank-swatch ${tone}`} aria-hidden="true" />
+                  <span className="rank-index">{index + 1}</span>
+                  <div className="rank-copy">
+                    {item.id === "unassigned" ? <strong>{item.name}</strong> : <Link href={`/clients/${item.id}?year=${year}`} className="client-name-link">{item.name}</Link>}
+                    <small>{item.deals} {item.deals === 1 ? "deal" : "deals"} · Paid {peso(item.paid)} · Outstanding {peso(item.due)}</small>
+                  </div>
+                  <div className="rank-bar-wrap">
+                    <div className={`rank-bar ${tone}`} style={{ width: `${Math.max(6, (item.billed / largestBilled) * 100)}%` }} />
+                  </div>
+                  <div className="rank-metrics">
+                    <strong>{peso(item.billed)}</strong>
+                    <span>{item.share}%</span>
+                  </div>
                 </div>
-                <div className="rank-bar-wrap">
-                  <div className="rank-bar" style={{ width: `${Math.max(6, (item.billed / largestBilled) * 100)}%` }} />
-                </div>
-                <div className="rank-metrics">
-                  <strong>{peso(item.billed)}</strong>
-                  <span>{item.share}%</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <p className="insights-note">
-            Top 5 agencies make up {Math.min(100, Math.round(topShareTotal * 10) / 10)}% of billed amount in {year}.
-            Unassigned dated SOAs are included when present.
-          </p>
+          <div className="insights-note-row">
+            <p className="insights-note">
+              Top {Math.min(TOP_COUNT, byBilled.length)} agencies make up {Math.min(100, Math.round(topShareTotal * 10) / 10)}% of billed amount in {year}.
+              {otherAgencies.length ? ` Remaining agencies are grouped as Others (${othersShare}%).` : ""}
+              {" "}Unassigned dated SOAs are included when present.
+            </p>
+            {hasMoreAgencies && (
+              <button type="button" className="show-all-btn" onClick={() => setShowAllAgencies(value => !value)}>
+                {showAllAgencies ? "Show top 5" : `Show all (${byBilled.length})`}
+              </button>
+            )}
+          </div>
         </section>
 
         <div className="insights-split">

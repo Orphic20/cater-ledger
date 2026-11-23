@@ -10,6 +10,7 @@ import { currentManilaYear, peso } from "@/lib/soa";
 import { useClients, useSoas } from "@/lib/tracker";
 
 const readableDate = (value: string | null) => value ? new Date(`${value}T12:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const refOrder = (ref: string | null) => { const match = ref?.match(/\d+/); return match ? Number(match[0]) : -1; };
 const labelAgency = (name: string | null | undefined) => name?.trim() || "Unnamed agency";
 
 export default function SoaPage() {
@@ -30,7 +31,7 @@ export default function SoaPage() {
     .filter(record => {
       const client = clientById(record.clientId);
       return `${record.refNumber ?? ""} ${record.agency ?? ""} ${client?.name ?? "Unassigned"}`.toLowerCase().includes(search.toLowerCase());
-    }).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+    }).sort((a, b) => refOrder(b.refNumber) - refOrder(a.refNumber) || (b.date ?? "").localeCompare(a.date ?? ""));
   const clearFilters = () => { setYear(String(currentManilaYear())); setClientId("all"); setStatus("all"); setSearch(""); };
 
   return <AppShell><div className="page-wrap">
