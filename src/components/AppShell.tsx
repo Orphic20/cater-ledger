@@ -5,6 +5,18 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
+function BrandLockup() {
+  return (
+    <Link href="/" className="brand-lockup">
+      <span className="brand-mark"><img src="/lai-logo.webp" alt="" /></span>
+      <span className="brand-name">
+        <img src="/lai-name.webp" alt="LAi Catering" />
+        <small>CLIENT, SOA, AND EVENT TRACKER</small>
+      </span>
+    </Link>
+  );
+}
+
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/soa", label: "SOA Tracker", icon: ClipboardList },
@@ -31,14 +43,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   return <div className="app-frame">
     <aside className="sidebar">
-      <Link href="/" className="brand-lockup"><span className="brand-mark"><img src="/lai-logo.webp" alt="" /></span><span><strong>LAi FOODHOUSE</strong><small>CLIENT LEDGER</small></span></Link>
+      <BrandLockup />
       <div className="nav-label">MAIN MENU</div>
       <nav className="side-nav" aria-label="Main navigation">{items.map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} className={activeFor(item.href) ? "nav-link active" : "nav-link"}><Icon size={18} /><span>{item.label}</span></Link>; })}</nav>
       <div className="sidebar-note"><span className="note-dot" />A clear view of what’s billed and due.</div>
       <div className="sidebar-footer">Agency &amp; billing tracker<button type="button" className="sign-out" onClick={() => { void signOut(); }}>Sign out</button></div>
     </aside>
     <div className="main-column">
-      <header className="mobile-header"><Link href="/" className="brand-lockup"><span className="brand-mark"><img src="/lai-logo.webp" alt="" /></span><span><strong>LAi FOODHOUSE</strong><small>CLIENT LEDGER</small></span></Link><button type="button" className="sign-out" onClick={() => { void signOut(); }}>Sign out</button></header>
+      <header className="mobile-header"><BrandLockup /><button type="button" className="sign-out" onClick={() => { void signOut(); }}>Sign out</button></header>
       <main className="main-content">{children}</main>
       <nav className="mobile-nav" aria-label="Main navigation">{items.map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} className={activeFor(item.href) ? "mobile-nav-link active" : "mobile-nav-link"}><Icon size={20} /><span>{item.label}</span></Link>; })}</nav>
     </div>
