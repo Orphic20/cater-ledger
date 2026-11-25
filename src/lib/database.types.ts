@@ -30,6 +30,88 @@ export type Database = {
         };
         Relationships: [];
       };
+      catering_events: {
+        Row: {
+          id: string;
+          client_id: string | null;
+          name: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id?: string | null;
+          name?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          client_id?: string | null;
+          name?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "catering_events_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      catering_event_days: {
+        Row: {
+          id: string;
+          event_id: string;
+          event_date: string;
+          breakfast: string | null;
+          am_snacks: string | null;
+          lunch: string | null;
+          pm_snacks: string | null;
+          dinner: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          event_date: string;
+          breakfast?: string | null;
+          am_snacks?: string | null;
+          lunch?: string | null;
+          pm_snacks?: string | null;
+          dinner?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          event_date?: string;
+          breakfast?: string | null;
+          am_snacks?: string | null;
+          lunch?: string | null;
+          pm_snacks?: string | null;
+          dinner?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "catering_event_days_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "catering_events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       soas: {
         Row: {
           id: string;
@@ -44,6 +126,7 @@ export type Database = {
           event_date: string | null;
           event_end_date: string | null;
           venue: string | null;
+          catering_event_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -60,6 +143,7 @@ export type Database = {
           event_date?: string | null;
           event_end_date?: string | null;
           venue?: string | null;
+          catering_event_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -76,6 +160,7 @@ export type Database = {
           event_date?: string | null;
           event_end_date?: string | null;
           venue?: string | null;
+          catering_event_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -85,6 +170,13 @@ export type Database = {
             columns: ["client_id"];
             isOneToOne: false;
             referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "soas_catering_event_id_fkey";
+            columns: ["catering_event_id"];
+            isOneToOne: false;
+            referencedRelation: "catering_events";
             referencedColumns: ["id"];
           },
         ];
@@ -105,6 +197,7 @@ export type Database = {
           event_date: string | null;
           event_end_date: string | null;
           venue: string | null;
+          catering_event_id: string | null;
           created_at: string;
           updated_at: string;
           status: "Paid" | "Unpaid" | "Overdue";
@@ -115,6 +208,13 @@ export type Database = {
             columns: ["client_id"];
             isOneToOne: false;
             referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "soas_catering_event_id_fkey";
+            columns: ["catering_event_id"];
+            isOneToOne: false;
+            referencedRelation: "catering_events";
             referencedColumns: ["id"];
           },
         ];

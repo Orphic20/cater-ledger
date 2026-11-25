@@ -7,7 +7,9 @@ alter table public.clients
 alter table public.soas
   add column if not exists event_end_date date;
 
-create or replace view public.soa_tracker as
+drop view if exists public.soa_tracker;
+
+create view public.soa_tracker as
 select
   s.id,
   s.client_id,

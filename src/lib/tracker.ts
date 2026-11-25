@@ -8,6 +8,33 @@ export type Client = {
   contactName: string | null;
   contactNumber: string | null;
 };
+
+export type CateringDayMenu = {
+  id?: string;
+  eventDate: string;
+  breakfast: string;
+  amSnacks: string;
+  lunch: string;
+  pmSnacks: string;
+  dinner: string;
+};
+
+export type CateringEvent = {
+  id: string;
+  clientId: string | null;
+  name: string | null;
+  notes: string | null;
+  days: CateringDayMenu[];
+};
+
+export type CateringEventDraft = {
+  id?: string;
+  clientId: string | null;
+  name: string;
+  notes: string;
+  days: CateringDayMenu[];
+};
+
 export type ViewSoa = {
   id: string;
   clientId: string | null;
@@ -21,8 +48,10 @@ export type ViewSoa = {
   eventDate: string | null;
   eventEndDate: string | null;
   venue: string | null;
+  cateringEventId: string | null;
   status: SoaStatus;
 };
+
 export type RefMode = "automatic" | "manual" | "blank";
 export type SoaDraft = {
   id?: string;
@@ -34,10 +63,7 @@ export type SoaDraft = {
   date: string | null;
   dueDate: string | null;
   amount: number | null;
-  eventName: string | null;
-  eventDate: string | null;
-  eventEndDate: string | null;
-  venue: string | null;
+  cateringEventId: string | null;
 };
 
 function blankToNull(value: string): string | null {
@@ -95,6 +121,7 @@ function mapSoa(row: {
   event_date: string | null;
   event_end_date?: string | null;
   venue: string | null;
+  catering_event_id?: string | null;
   status?: SoaStatus | null;
 }): ViewSoa {
   const paidAt = row.paid_at;
@@ -112,7 +139,28 @@ function mapSoa(row: {
     eventDate: row.event_date,
     eventEndDate: row.event_end_date ?? null,
     venue: row.venue,
+    cateringEventId: row.catering_event_id ?? null,
     status: row.status ?? statusFor(paidAt, dueDate),
+  };
+}
+
+function mapDay(row: {
+  id: string;
+  event_date: string;
+  breakfast: string | null;
+  am_snacks: string | null;
+  lunch: string | null;
+  pm_snacks: string | null;
+  dinner: string | null;
+}): CateringDayMenu {
+  return {
+    id: row.id,
+    eventDate: row.event_date,
+    breakfast: row.breakfast ?? "",
+    amSnacks: row.am_snacks ?? "",
+    lunch: row.lunch ?? "",
+    pmSnacks: row.pm_snacks ?? "",
+    dinner: row.dinner ?? "",
   };
 }
 
@@ -128,10 +176,40 @@ async function fetchClients(): Promise<Client[]> {
 async function fetchSoas(): Promise<ViewSoa[]> {
   const { data, error } = await supabase
     .from("soa_tracker")
-    .select("id, client_id, ref_no, agency, soa_date, due_date, amount, paid_at, event_name, event_date, event_end_date, venue, status")
+    .select("id, client_id, ref_no, agency, soa_date, due_date, amount, paid_at, event_name, event_date, event_end_date, venue, catering_event_id, status")
     .order("soa_date", { ascending: false, nullsFirst: false });
   throwIfError(error);
   return (data ?? []).map(mapSoa);
+}
+
+async function fetchCateringEvents(): Promise<CateringEvent[]> {
+  const { data: events, error } = await supabase
+    .from("catering_events")
+    .select("id, client_id, name, notes, created_at")
+    .order("created_at", { ascending: false });
+  throwIfError(error);
+  if (!events?.length) return [];
+
+  const { data: days, error: daysError } = await supabase
+    .from("catering_event_days")
+    .select("id, event_id, event_date, breakfast, am_snacks, lunch, pm_snacks, dinner")
+    .order("event_date", { ascending: true });
+  throwIfError(daysError);
+
+  const daysByEvent = new Map<string, CateringDayMenu[]>();
+  for (const day of days ?? []) {
+    const list = daysByEvent.get(day.event_id) ?? [];
+    list.push(mapDay(day));
+    daysByEvent.set(day.event_id, list);
+  }
+
+  return events.map(event => ({
+    id: event.id,
+    clientId: event.client_id,
+    name: event.name,
+    notes: event.notes,
+    days: daysByEvent.get(event.id) ?? [],
+  }));
 }
 
 export function useClients() {
@@ -140,6 +218,10 @@ export function useClients() {
 
 export function useSoas() {
   return useQuery({ queryKey: ["soas"], queryFn: fetchSoas });
+}
+
+export function useCateringEvents() {
+  return useQuery({ queryKey: ["catering-events"], queryFn: fetchCateringEvents });
 }
 
 async function ensureClientId(draft: SoaDraft): Promise<string | null> {
@@ -160,9 +242,6 @@ async function ensureClientId(draft: SoaDraft): Promise<string | null> {
 
 async function saveSoa(draft: SoaDraft): Promise<string> {
   const clientId = await ensureClientId(draft);
-  const eventEndDate = draft.eventEndDate && draft.eventDate && draft.eventEndDate < draft.eventDate
-    ? draft.eventDate
-    : draft.eventEndDate;
 
   if (draft.id) {
     const { error } = await supabase
@@ -174,10 +253,7 @@ async function saveSoa(draft: SoaDraft): Promise<string> {
         soa_date: draft.date,
         due_date: draft.dueDate,
         amount: draft.amount,
-        event_name: draft.eventName,
-        event_date: draft.eventDate,
-        event_end_date: eventEndDate,
-        venue: draft.venue,
+        catering_event_id: draft.cateringEventId,
       })
       .eq("id", draft.id);
     throwIfError(error);
@@ -192,22 +268,63 @@ async function saveSoa(draft: SoaDraft): Promise<string> {
     p_soa_date: draft.date,
     p_due_date: draft.dueDate,
     p_amount: draft.amount,
-    p_event_name: draft.eventName,
-    p_event_date: draft.eventDate,
-    p_venue: draft.venue,
+    p_event_name: null,
+    p_event_date: null,
+    p_venue: null,
   });
   throwIfError(error);
   if (!data) throw new Error("Couldn’t save the SOA.");
 
-  if (eventEndDate) {
-    const { error: endError } = await supabase
+  if (draft.cateringEventId) {
+    const { error: linkError } = await supabase
       .from("soas")
-      .update({ event_end_date: eventEndDate })
+      .update({ catering_event_id: draft.cateringEventId })
       .eq("id", data.id);
-    throwIfError(endError);
+    throwIfError(linkError);
   }
 
   return data.id;
+}
+
+async function saveCateringEvent(draft: CateringEventDraft): Promise<string> {
+  const payload = {
+    client_id: draft.clientId,
+    name: blankToNull(draft.name),
+    notes: blankToNull(draft.notes),
+    updated_at: new Date().toISOString(),
+  };
+
+  let eventId = draft.id;
+  if (eventId) {
+    const { error } = await supabase.from("catering_events").update(payload).eq("id", eventId);
+    throwIfError(error);
+    const { error: deleteError } = await supabase.from("catering_event_days").delete().eq("event_id", eventId);
+    throwIfError(deleteError);
+  } else {
+    const { data, error } = await supabase.from("catering_events").insert(payload).select("id").single();
+    throwIfError(error);
+    if (!data) throw new Error("Couldn’t save the catering event.");
+    eventId = data.id;
+  }
+
+  const dayRows = draft.days
+    .filter(day => day.eventDate)
+    .map(day => ({
+      event_id: eventId!,
+      event_date: day.eventDate,
+      breakfast: blankToNull(day.breakfast),
+      am_snacks: blankToNull(day.amSnacks),
+      lunch: blankToNull(day.lunch),
+      pm_snacks: blankToNull(day.pmSnacks),
+      dinner: blankToNull(day.dinner),
+    }));
+
+  if (dayRows.length) {
+    const { error: daysError } = await supabase.from("catering_event_days").insert(dayRows);
+    throwIfError(daysError);
+  }
+
+  return eventId!;
 }
 
 export function useSaveSoa() {
@@ -216,6 +333,31 @@ export function useSaveSoa() {
     mutationFn: saveSoa,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await queryClient.invalidateQueries({ queryKey: ["soas"] });
+    },
+  });
+}
+
+export function useSaveCateringEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveCateringEvent,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["catering-events"] });
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+}
+
+export function useDeleteCateringEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("catering_events").delete().eq("id", id);
+      throwIfError(error);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["catering-events"] });
       await queryClient.invalidateQueries({ queryKey: ["soas"] });
     },
   });

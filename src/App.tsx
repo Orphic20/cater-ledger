@@ -11,6 +11,7 @@ import SoaPage from "./pages/SoaPage";
 import SoaEditorPage from "./pages/SoaEditorPage";
 import ClientDetails from "./pages/ClientDetails";
 import CalendarPage from "./pages/CalendarPage";
+import CateringEventEditorPage from "./pages/CateringEventEditorPage";
 import InsightsPage from "./pages/InsightsPage";
 
 const queryClient = new QueryClient({
@@ -28,6 +29,10 @@ function Router() {
       <Route path="/soa/:id">{params => <SoaEditorPage recordId={params.id} />}</Route>
       <Route path="/clients/:id">{params => <ClientDetails clientId={params.id} />}</Route>
       <Route path="/calendar" component={CalendarPage} />
+      <Route path="/calendar/events/new">
+        <CateringEventEditorPage eventId={null} />
+      </Route>
+      <Route path="/calendar/events/:id">{params => <CateringEventEditorPage eventId={params.id} />}</Route>
       <Route path="/insights" component={InsightsPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

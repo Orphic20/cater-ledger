@@ -8,6 +8,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
+      buffer: "buffer/",
     },
+  },
+  define: {
+    global: "globalThis",
+  },
+  optimizeDeps: {
+    include: ["buffer", "word-extractor", "mammoth"],
   },
 });
