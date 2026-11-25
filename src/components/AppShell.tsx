@@ -10,7 +10,7 @@ function BrandLockup() {
     <Link href="/" className="brand-lockup">
       <span className="brand-mark"><img src="/lai-logo.webp" alt="" /></span>
       <span className="brand-name">
-        <img src="/lai-name.webp" alt="LAi Catering" />
+        <strong>LAi Catering</strong>
         <small>CLIENT, SOA, AND EVENT TRACKER</small>
       </span>
     </Link>

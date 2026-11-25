@@ -121,12 +121,12 @@
 .brand-mark{width:auto;height:auto;background:transparent;border-radius:0;flex:none}
 .brand-mark img{width:34px;height:34px;object-fit:contain;display:block;mix-blend-mode:multiply}
 .brand-name{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
-.brand-name img{height:31px;width:auto;max-width:100%;object-fit:contain;object-position:left center;display:block;mix-blend-mode:multiply}
+.brand-lockup strong{white-space:nowrap;font-size:15px;font-weight:500;letter-spacing:-.3px;color:#27352b}
 .brand-lockup small{margin-top:0;white-space:nowrap;font-size:7px;letter-spacing:.12px;line-height:1}
 @media(max-width:760px){
   .mobile-header{height:auto;min-height:62px;padding-top:8px;padding-bottom:8px}
   .mobile-header .brand-mark img{width:32px;height:32px}
-  .mobile-header .brand-name img{height:28px}
+  .mobile-header .brand-lockup strong{font-size:14px}
   .mobile-header .brand-lockup small{font-size:6.5px;letter-spacing:.08px}
 }
 .year-picker,.filter-select{position:relative;cursor:pointer}
