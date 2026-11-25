@@ -260,9 +260,10 @@ async function extractDocxHtml(buffer: ArrayBuffer): Promise<string> {
 
 async function extractDocBody(buffer: ArrayBuffer): Promise<string> {
   const { Buffer } = await import("buffer");
-  const WordExtractor = (await import("word-extractor")).default;
-  const extractor = new WordExtractor();
-  const document = await extractor.extract(Buffer.from(buffer));
+  (globalThis as { Buffer?: typeof Buffer }).Buffer = Buffer;
+  const { default: WordOleExtractor } = await import("word-extractor/lib/word-ole-extractor.js");
+  const { default: BufferReader } = await import("word-extractor/lib/buffer-reader.js");
+  const document = await new WordOleExtractor().extract(new BufferReader(Buffer.from(buffer)));
   return document.getBody();
 }
 

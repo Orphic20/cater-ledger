@@ -1,5 +1,17 @@
 /// <reference types="vite/client" />
 
+declare module "word-extractor/lib/word-ole-extractor.js" {
+  export default class WordOleExtractor {
+    extract(reader: unknown): Promise<{ getBody(): string }>;
+  }
+}
+
+declare module "word-extractor/lib/buffer-reader.js" {
+  export default class BufferReader {
+    constructor(buffer: import("buffer").Buffer);
+  }
+}
+
 declare module "word-extractor" {
   export default class WordExtractor {
     extract(source: string | import("buffer").Buffer): Promise<{

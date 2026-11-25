@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
       buffer: "buffer/",
+      stream: path.resolve(import.meta.dirname, "src/shims/node-stream.ts"),
     },
   },
   define: {
