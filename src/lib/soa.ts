@@ -40,29 +40,6 @@ export function statusFor(paidAt: string | null, dueDate: string | null): SoaSta
   return "Unpaid";
 }
 
-/** Inclusive event span; missing end date means a single-day event. */
-export function eventSpansDay(start: string | null | undefined, end: string | null | undefined, day: string): boolean {
-  if (!start) return false;
-  const last = end && end >= start ? end : start;
-  return start <= day && day <= last;
-}
-
-export function eventTouchesMonth(start: string | null | undefined, end: string | null | undefined, year: number, month: number): boolean {
-  if (!start) return false;
-  const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, "0")}`;
-  const last = end && end >= start ? end : start;
-  return start <= monthEnd && last >= monthStart;
-}
-
-export function formatEventRange(start: string | null | undefined, end: string | null | undefined): string {
-  if (!start) return "—";
-  const startLabel = new Date(`${start}T12:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  if (!end || end <= start) return startLabel;
-  const endLabel = new Date(`${end}T12:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  return `${startLabel} – ${endLabel}`;
-}
-
 /** Prefill only. The real automatic number is assigned in create_soa. */
 export function suggestNextReference(refs: Array<string | null | undefined>, year: number): string {
   const pattern = new RegExp(`^(\\d+)-${year}$`);
