@@ -84,5 +84,5 @@ function StaffRequiredScreen({ email }: { email?: string | null }) {
 }
 
 function Centered({ children }: { children: ReactNode }) {
-  return <div className="auth-screen"><section className="editor-card auth-card"><div className="auth-brand"><img className="auth-logo" src="/lai-logo.webp" alt="" /><img className="auth-wordmark" src="/lai-name.webp" alt="LAi Catering" /></div>{children}</section></div>;
+  return <div className="auth-screen"><section className="editor-card auth-card">{children}</section></div>;
 }
