@@ -40,11 +40,13 @@ export default function CalendarPage() {
   const [, setLocation] = useLocation();
   const today = manilaToday();
   const fileRef = useRef<HTMLInputElement>(null);
+  const openedDate = new URLSearchParams(window.location.search).get("date") ?? "";
+  const startDate = /^\d{4}-\d{2}-\d{2}$/.test(openedDate) ? openedDate : today;
   const [monthCursor, setMonthCursor] = useState(() => {
-    const date = new Date(`${today}T12:00:00`);
+    const date = new Date(`${startDate}T12:00:00`);
     return { year: date.getFullYear(), month: date.getMonth() };
   });
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(startDate);
   const [year, month] = [monthCursor.year, monthCursor.month];
 
   const days = useMemo(() => {
@@ -176,7 +178,16 @@ export default function CalendarPage() {
                     >
                       <span className="calendar-day-number">{day}</span>
                       {shown.map(event => (
-                        <span key={event.id} className="calendar-event-pill">{eventTitle(event)}</span>
+                        <span
+                          key={event.id}
+                          className="calendar-event-pill"
+                          onClick={click => {
+                            click.stopPropagation();
+                            setLocation(`/calendar/events/${event.id}?date=${encodeURIComponent(dayString)}`);
+                          }}
+                        >
+                          {eventTitle(event)}
+                        </span>
                       ))}
                       {more > 0 && <span className="calendar-more">+{more} more</span>}
                     </button>

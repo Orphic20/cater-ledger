@@ -174,7 +174,7 @@ function EventForm({
       return;
     }
     try {
-      const id = await saveEvent.mutateAsync({
+      await saveEvent.mutateAsync({
         id: existingId,
         clientId: clientId === "unassigned" ? null : clientId,
         name,
@@ -189,7 +189,8 @@ function EventForm({
         })),
       });
       toast.success(existingId ? "Catering event updated" : "Catering event saved");
-      setLocation(`/calendar/events/${id}${focusDate ? `?date=${encodeURIComponent(focusDate)}` : ""}`);
+      const backDate = focusDate || rows.map(row => row.eventDate).filter(Boolean).sort()[0] || "";
+      setLocation(backDate ? `/calendar?date=${encodeURIComponent(backDate)}` : "/calendar");
     } catch (error) {
       toast.error(errorMessage(error));
     }
@@ -209,7 +210,7 @@ function EventForm({
   return (
     <AppShell>
       <div className="page-wrap editor-page catering-event-editor">
-        <Link href="/calendar" className="back-link"><ArrowLeft size={16} />Back to Calendar</Link>
+        <Link href={focusDate ? `/calendar?date=${encodeURIComponent(focusDate)}` : "/calendar"} className="back-link"><ArrowLeft size={16} />Back to Calendar</Link>
         <div className="page-heading editor-heading">
           <div>
             <div className="eyebrow">{existingId ? "CATERING EVENT" : "NEW CATERING EVENT"}</div>
@@ -263,11 +264,11 @@ function EventForm({
             <div className="form-section-title">
               <span className="form-step event-step">2</span>
               <div>
-                <h2>Daily menus</h2>
-                <p>One menu per event date. Import a Word menu or enter days manually.</p>
+                <h2>{focusDate ? "Menu for this day" : "Daily menus"}</h2>
+                <p>{focusDate ? "Only this date is shown. The other days in the booking stay as they are." : "One menu per event date. Import a Word menu or enter days manually."}</p>
               </div>
             </div>
-            <div className="menu-toolbar">
+            {!focusDate && <div className="menu-toolbar">
               <input
                 ref={fileRef}
                 type="file"
@@ -281,12 +282,12 @@ function EventForm({
               <Button type="button" variant="outline" onClick={() => setRows(current => revalidateRows([...current, blankMenuDay()]))}>
                 <Plus size={16} />Add day
               </Button>
-            </div>
+            </div>}
 
             <div className="menu-day-list">
-              {sortedRows.map((row) => {
+              {(focusDate ? sortedRows.filter(row => row.eventDate === focusDate) : sortedRows).map((row) => {
                 const index = rows.indexOf(row);
-                const focused = focusDate && row.eventDate === focusDate;
+                const focused = Boolean(focusDate);
                 return (
                   <article key={`${row.eventDate}-${index}`} className={`menu-day-card ${focused ? "menu-day-focused" : ""} ${row.issues.length ? "menu-day-invalid" : ""}`}>
                     <div className="menu-day-heading">
@@ -295,17 +296,20 @@ function EventForm({
                         <input
                           type="date"
                           value={row.eventDate}
+                          readOnly={Boolean(focusDate)}
                           onChange={event => updateRow(index, { eventDate: event.target.value, rawDate: event.target.value })}
                         />
                       </label>
-                      <button
-                        type="button"
-                        className="icon-button"
-                        aria-label="Remove day"
-                        onClick={() => setRows(current => revalidateRows(current.filter((_, i) => i !== index)))}
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {!focusDate && (
+                        <button
+                          type="button"
+                          className="icon-button"
+                          aria-label="Remove day"
+                          onClick={() => setRows(current => revalidateRows(current.filter((_, i) => i !== index)))}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                     {row.issues.length > 0 && (
                       <div className="menu-day-issues"><CircleAlert size={14} />{row.issues.join(" · ")}</div>
@@ -349,7 +353,11 @@ function EventForm({
 
           <div className="form-footer">
             <div className="form-footer-note">
-              {canSave ? `${rows.length} ${rows.length === 1 ? "day" : "days"} ready to save.` : "Fix date issues in the preview before saving."}
+              {focusDate
+                ? "Saving keeps the other days in this booking."
+                : canSave
+                  ? `${rows.length} ${rows.length === 1 ? "day" : "days"} ready to save.`
+                  : "Fix date issues in the preview before saving."}
             </div>
             <div className="footer-actions">
               {existingId && (
